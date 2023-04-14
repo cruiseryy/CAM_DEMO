@@ -25,13 +25,13 @@ mm = nino34.groupby('time.month')
 nino_anomaly = mm - mm.mean(dim='time')
 nino_idx = nino_anomaly.mean(dim=['latitude', 'longitude'])
 
-# i wroted these to test if i understand the above some lines correctly
-i = j = 0
-mmm = mm.mean(dim='time')
-tmp0 = nino34[:, i, j].to_numpy()
-ss = mmm[:, i, j].to_numpy()
-tmp1 = nino_anomaly[:, 0, 0].to_numpy()
-tmp2 = tmp1 + np.tile(ss, [40, ])
+# # i wroted these to test if i understand the above some lines correctly
+# i = j = 0
+# mmm = mm.mean(dim='time')
+# tmp0 = nino34[:, i, j].to_numpy()
+# ss = mmm[:, i, j].to_numpy()
+# tmp1 = nino_anomaly[:, 0, 0].to_numpy()
+# tmp2 = tmp1 + np.tile(ss, [40, ])
+# plt.scatter(tmp0, tmp2)
 
-plt.scatter(tmp0, tmp2)
 pause = 1
