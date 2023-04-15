@@ -36,9 +36,9 @@ class sst_prcp_ds(Dataset):
 
             sst_clim = sst0.isel(time=slice(self.buffer+baseline[0], self.buffer+baseline[1])).groupby('time.month')
             sst_clim_avg = sst_clim.mean(dim='time')
-            sst_clim_std = sst_clim.std(dim='time')
+            sst_clim_std = (sst_clim.std(dim='time') + 1e-6)
 
-            self.sst = (sst0.isel(time=slice(start, end + self.buffer)).groupby('time.month') - sst_clim_avg).groupby('time.month') / sst_clim_std
+            self.sst = (sst0.isel(time=slice(start, end + self.buffer)).groupby('time.month') - sst_clim_avg).groupby('time.month') / sst_clim_std 
 
             self.sst.coords['longitude'] = (self.sst.coords['longitude'] + 360) % 360 
             self.sst = self.sst.sortby(self.sst.longitude)

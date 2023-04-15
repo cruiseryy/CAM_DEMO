@@ -8,7 +8,7 @@ from utils import sst_prcp_ds
 from torch.utils.data import DataLoader
 from torch import nn
 
-cchannel = 1
+cchannel = 6
 batch_size = 12
 
 class NeuralNetwork(nn.Module):
@@ -16,20 +16,24 @@ class NeuralNetwork(nn.Module):
         super().__init__()
 
         self.flatten = nn.Flatten()
-
-        self.dropout = nn.Dropout(0.25)
+        self.dropout = nn.Dropout(0.5)
         self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
 
         self.conv1 = nn.Conv2d(in_channels=cchannel, out_channels=32, kernel_size=(8,4))
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        
 
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=12, kernel_size=(4,2))
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.gap = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc0 = nn.Linear(12, 1)
         self.fc1 = nn.Linear(26400, 32)
         self.fc2 = nn.Linear(32, 1)
+
+        # self.fc1 = nn.Linear(cchannel*115*360, 512)
+        # self.fc2 = nn.Linear(512, 64)
+        # self.fc3 = nn.Linear(64, 1)
    
 
     def forward(self, x):
@@ -37,21 +41,28 @@ class NeuralNetwork(nn.Module):
         x = self.conv1(x)
         x = self.pool1(x)
         x = self.relu(x)
-        x = self.dropout(x)
         
         x = self.conv2(x)
         x = self.pool2(x)
         x = self.relu(x)
-        x = self.dropout(x)
         
-        # x = self.gap(x)
-        # x = x.view(x.size(0), -1)
-        x = self.flatten(x)
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.fc2(x)
-        x = torch.sigmoid(x)
+        x = self.gap(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc0(x)
+
+        # x = self.flatten(x)
+
+        # x = self.fc1(x)
+        # x = self.dropout(x)
+        # x = self.relu(x)
+
+        # x = self.fc2(x)
+        # x = self.dropout(x)
+        # x = self.relu(x)
+
+        # x = self.fc3(x)
+
+        x = self.sigmoid(x)
 
         return x
 
@@ -75,7 +86,7 @@ device = (
 print(f"Using {device} device")
 
 model = NeuralNetwork().to(device)
-learning_rate = 0.01
+learning_rate = 0.1
 
 epochs = 100
 
