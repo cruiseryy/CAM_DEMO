@@ -8,8 +8,8 @@ from utils import sst_prcp_ds
 from torch.utils.data import DataLoader
 from torch import nn
 
-cchannel = 6
-batch_size = 12
+cchannel = 12
+batch_size = 6
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
@@ -20,16 +20,16 @@ class NeuralNetwork(nn.Module):
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
-        self.conv1 = nn.Conv2d(in_channels=cchannel, out_channels=32, kernel_size=(8,4))
+        self.conv1 = nn.Conv2d(in_channels=cchannel, out_channels=64, kernel_size=(8,4))
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=12, kernel_size=(4,2))
+        self.conv2 = nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(4,2))
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.gap = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc0 = nn.Linear(12, 1)
-        self.fc1 = nn.Linear(26400, 32)
-        self.fc2 = nn.Linear(32, 1)
+        self.fc0 = nn.Linear(32, 1)
+        # self.fc1 = nn.Linear(26400, 32)
+        # self.fc2 = nn.Linear(32, 1)
 
         # self.fc1 = nn.Linear(cchannel*115*360, 512)
         # self.fc2 = nn.Linear(512, 64)
@@ -86,7 +86,7 @@ device = (
 print(f"Using {device} device")
 
 model = NeuralNetwork().to(device)
-learning_rate = 0.1
+learning_rate = 0.01
 
 epochs = 100
 
