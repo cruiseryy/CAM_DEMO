@@ -9,7 +9,7 @@ from torchvision import datasets
 from matplotlib import pyplot as plt
 
 class sst_prcp_ds(Dataset):
-    def __init__(self, data_path = '/Users/cruiseryy/Documents/ML_random_codes/cnn_demo/demo_data/', 
+    def __init__(self, data_path = '/home/climate/xp53/cnn_demo/CAM_DEMO/demo_data/', 
                  sst_file = 'HadISST_SST.nc', 
                  prcp_file = 'sta_monthly.csv', 
                  channel = 1,
@@ -28,25 +28,30 @@ class sst_prcp_ds(Dataset):
 
         self.channel = channel
         self.lag = lag
+        with xr.open_dataset(data_path + sst_file) as sst0:
+    
+            sst0 = sst0.sst.sel(latitude=slice(60, -55), time=slice('1979-01-01', '2021-01-01'))
+            sst0 = sst0.where(sst0>0, 0)
 
-        sst0 = xr.open_dataset(data_path + sst_file).sst.sel(latitude=slice(60, -55), time=slice('1979-01-01', '2021-01-01'))
-        sst0 = sst0.where(sst0>0, 0)
+            sst_clim = sst0.isel(time=slice(self.buffer+baseline[0], self.buffer+baseline[1])).groupby('time.month')
+            sst_clim_avg = sst_clim.mean(dim='time')
+            sst_clim_std = sst_clim.std(dim='time')
 
-        climatology = sst0.isel(time=slice(self.buffer+baseline[0], self.buffer+baseline[1])).groupby('time.month').mean(dim='time')
+            self.sst = (sst0.isel(time=slice(start, end + self.buffer)).groupby('time.month') - sst_clim_avg).groupby('time.month') / sst_clim_std
 
-        self.sst = sst0.isel(time=slice(start, end + self.buffer)).groupby('time.month') - climatology
-
-        self.sst.coords['longitude'] = (self.sst.coords['longitude'] + 360) % 360 
-        self.sst = self.sst.sortby(self.sst.longitude)
+            self.sst.coords['longitude'] = (self.sst.coords['longitude'] + 360) % 360 
+            self.sst = self.sst.sortby(self.sst.longitude)
 
         prcp0 = np.mean(np.loadtxt(data_path + prcp_file), axis=1)
 
-        prcp_clim = np.zeros([12,])
+        prcp_clim_avg = np.zeros([12, ])
+        prcp_clim_std = np.zeros([12, ])
         for i in range(12):
-            prcp_clim[i] = np.mean(prcp0[baseline[0]+i:baseline[1]:12])
+            prcp_clim_avg[i] = np.mean(prcp0[baseline[0]+i:baseline[1]:12])
+            prcp_clim_std[i] = np.std(prcp0[baseline[0]+i:baseline[1]:12])
 
         nn = (end - start) // 12 
-        self.prcp = ((prcp0[start:end] - np.tile(prcp_clim, [nn, ])) > 0)
+        self.prcp = (prcp0[start:end] - np.tile(prcp_clim_avg, [nn, ])) / np.tile(prcp_clim_std, [nn, ]) 
 
         pause = 1
 
@@ -58,9 +63,10 @@ class sst_prcp_ds(Dataset):
         sst_stack = np.zeros([self.channel, self.sst.shape[1], self.sst.shape[2]])
         for i in range(self.channel):
             sst_stack[i, :, :] = self.sst.isel(time=idx+self.buffer-self.lag-i).to_numpy()
-        xx_sst = torch.from_numpy(sst_stack).type(torch.float32)
-        yy_prcp = torch.from_numpy(np.array(self.prcp[idx])).type(torch.float32)
-        return xx_sst, yy_prcp
+        xx = torch.from_numpy(sst_stack).type(torch.float32)
+        yy = 1 if self.prcp[idx] > 0 else 0
+        yy = torch.from_numpy(np.array(yy)).type(torch.float32)
+        return xx, yy
 
 if __name__ == '__main__':
     test_data = sst_prcp_ds(channel=3, lag=2)

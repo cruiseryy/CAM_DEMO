@@ -63,8 +63,19 @@ test_data = sst_prcp_ds(channel=cchannel, lag=0, start=240, end=480)
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-model = NeuralNetwork()
-learning_rate = 0.1
+
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
+
+print(f"Using {device} device")
+
+model = NeuralNetwork().to(device)
+learning_rate = 0.01
 
 epochs = 100
 
