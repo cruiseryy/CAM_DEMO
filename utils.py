@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 class sst_prcp_ds(Dataset):
     def __init__(self, data_path = '/home/climate/xp53/cnn_demo/CAM_DEMO/demo_data/', 
-                 sst_file = 'HadISST_SST.nc', 
+                 sst_file = 'HadISST_sst.nc', 
                  prcp_file = 'sta_monthly.csv', 
                  channel = 1,
                  lag = 0,
@@ -28,6 +28,7 @@ class sst_prcp_ds(Dataset):
 
         self.channel = channel
         self.lag = lag
+
         with xr.open_dataset(data_path + sst_file) as sst0:
     
             sst0 = sst0.sst.sel(latitude=slice(60, -55), time=slice('1979-01-01', '2021-01-01'))
