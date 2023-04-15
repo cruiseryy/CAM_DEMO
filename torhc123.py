@@ -76,17 +76,7 @@ train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 
-device = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
-
-print(f"Using {device} device")
-
-model = NeuralNetwork().to(device)
+model = NeuralNetwork()
 learning_rate = 0.01
 
 epochs = 5
@@ -147,4 +137,12 @@ model._modules.get("conv2").register_forward_hook(hook_feature)
 tmpx, tmpy = test_data[0]
 tmpx = Variable(tmpx.unsqueeze(0))
 pred = model(tmpx)
+
+h, w = features_blobs[0].shape[2], features_blobs[0].shape[3]
+CAM = torch.from_numpy(np.zeros([h, w]))
+for i in range(model.fc0.weight.shape[1]):
+    CAM += model.fc0.weight[0][i].item() * features_blobs[0][0, i, :, :]
+
+
+plt.imshow(CAM)
 pause = 1

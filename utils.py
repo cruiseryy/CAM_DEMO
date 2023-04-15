@@ -9,7 +9,7 @@ from torchvision import datasets
 from matplotlib import pyplot as plt
 
 class sst_prcp_ds(Dataset):
-    def __init__(self, data_path = '/home/climate/xp53/cnn_demo/CAM_DEMO/demo_data/', 
+    def __init__(self, data_path = '/Users/cruiseryy/Documents/GitHub/CAM_DEMO/demo_data/', 
                  sst_file = 'HadISST_sst.nc', 
                  prcp_file = 'sta_monthly.csv', 
                  channel = 1,
