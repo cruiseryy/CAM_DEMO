@@ -76,7 +76,16 @@ train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 
-model = NeuralNetwork()
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
+print(f"Using {device} device")
+model = NeuralNetwork().to(device)
+# model = NeuralNetwork()
 learning_rate = 0.01
 
 epochs = 5
@@ -89,6 +98,7 @@ def train_loop(dataloader, model, optimizer):
     size = len(dataloader.dataset)
     correct = 0
     for batch, (X, y) in enumerate(dataloader):
+        X, y = X.to(device), y.to(device)
         # Compute prediction and loss
         pred = model(X)
         y = torch.reshape(y, (len(y), 1))
@@ -115,6 +125,7 @@ def test_loop(dataloader, model):
 
     with torch.no_grad():
         for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
             pred = model(X)
             y = torch.reshape(y, (len(y), 1))
             test_loss += loss_fn(pred, y).item()
@@ -135,6 +146,7 @@ def hook_feature(module, input, output):
 
 model._modules.get("conv2").register_forward_hook(hook_feature)
 tmpx, tmpy = test_data[0]
+tmpx, tmpy = tmpx.to(device), tmpy.to(device)
 tmpx = Variable(tmpx.unsqueeze(0))
 pred = model(tmpx)
 
@@ -143,6 +155,6 @@ CAM = torch.from_numpy(np.zeros([h, w]))
 for i in range(model.fc0.weight.shape[1]):
     CAM += model.fc0.weight[0][i].item() * features_blobs[0][0, i, :, :]
 
-
+plt.figure()
 plt.imshow(CAM)
 pause = 1
