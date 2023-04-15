@@ -7,8 +7,9 @@ import numpy as np
 from utils import sst_prcp_ds
 from torch.utils.data import DataLoader
 from torch import nn
+from torch.autograd import Variable
 
-cchannel = 12
+cchannel = 1
 batch_size = 6
 
 class NeuralNetwork(nn.Module):
@@ -88,7 +89,7 @@ print(f"Using {device} device")
 model = NeuralNetwork().to(device)
 learning_rate = 0.01
 
-epochs = 100
+epochs = 5
 
 loss_fn = nn.BCELoss() 
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
@@ -137,4 +138,13 @@ for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train_loop(train_dataloader, model, optimizer)
     test_loop(test_dataloader, model)
+
+features_blobs = []
+def hook_feature(module, input, output):
+    features_blobs.append(output.data.cpu().numpy())
+
+model._modules.get("conv2").register_forward_hook(hook_feature)
+tmpx, tmpy = test_data[0]
+tmpx = Variable(tmpx.unsqueeze(0))
+pred = model(tmpx)
 pause = 1
