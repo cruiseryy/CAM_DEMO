@@ -9,9 +9,15 @@ from torch.utils.data import DataLoader
 from torch import nn
 from torch.autograd import Variable
 
-cchannel = 12
-batch_size = 5
+cchannel = 1
+batch_size = 6
 lag = 1
+
+learning_rate = 1e-3
+epochs = 50
+
+loss_fn = nn.BCELoss() 
+# loss_fn = nn.MSELoss() 
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
@@ -22,14 +28,19 @@ class NeuralNetwork(nn.Module):
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
-        self.conv1 = nn.Conv2d(in_channels=cchannel, out_channels=64, kernel_size=(8,4))
+        self.pool0 = nn.MaxPool2d(kernel_size=5, stride=5)
+
+        self.conv1 = nn.Conv2d(in_channels=cchannel, out_channels=30, kernel_size=(8,4))
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.conv2 = nn.Conv2d(in_channels=64, out_channels=12, kernel_size=(4,2))
+        self.conv2 = nn.Conv2d(in_channels=30, out_channels=30, kernel_size=(4,2))
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.gap = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc0 = nn.Linear(12, 1)
+        self.fc0 = nn.Linear(30, 1)
+        self.fcc1 = nn.Linear(960, 32)
+        self.fcc2 = nn.Linear(32, 1)
+
         # self.fc1 = nn.Linear(26400, 32)
         # self.fc2 = nn.Linear(32, 1)
 
@@ -40,6 +51,8 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, x):
 
+        x = self.pool0(x)
+
         x = self.conv1(x)
         x = self.pool1(x)
         x = self.relu(x)
@@ -49,7 +62,11 @@ class NeuralNetwork(nn.Module):
         x = self.pool2(x)
         x = self.relu(x)
         x = self.dropout(x)
-        
+
+        # x = self.flatten(x)
+        # x = self.fcc1(x)
+        # x = self.fcc2(x)
+
         x = self.gap(x)
         x = x.view(x.size(0), -1)
         x = self.fc0(x)
@@ -89,12 +106,7 @@ device = (
 print(f"Using {device} device")
 model = NeuralNetwork().to(device)
 # model = NeuralNetwork()
-learning_rate = 0.01
 
-epochs = 100
-
-loss_fn = nn.BCELoss() 
-# loss_fn = nn.MSELoss() 
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
 pause = 1

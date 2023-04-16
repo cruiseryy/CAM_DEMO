@@ -36,12 +36,18 @@ class sst_prcp_ds(Dataset):
 
             sst_clim = sst0.isel(time=slice(self.buffer+baseline[0], self.buffer+baseline[1])).groupby('time.month')
             sst_clim_avg = sst_clim.mean(dim='time')
-            sst_clim_std = (sst_clim.std(dim='time') + 1e-6)
+            # sst_clim_std = (sst_clim.std(dim='time') + 1e-6)
 
-            self.sst = (sst0.isel(time=slice(start, end + self.buffer)).groupby('time.month') - sst_clim_avg).groupby('time.month') / sst_clim_std 
+            # self.sst = (sst0.isel(time=slice(start, end + self.buffer)).groupby('time.month') - sst_clim_avg).groupby('time.month') / sst_clim_std
+
+            self.sst = sst0.isel(time=slice(start, end + self.buffer)).groupby('time.month') - sst_clim_avg
 
             self.sst.coords['longitude'] = (self.sst.coords['longitude'] + 360) % 360 
             self.sst = self.sst.sortby(self.sst.longitude)
+
+            self.nino34 = self.sst.isel(time=slice(self.buffer, end+start),latitude=slice(5, -5), longitude=slice(190, 240)).mean(dim=['latitude', 'longitude'])
+
+            pause = 1
 
         # prcp0 = np.mean(np.loadtxt(data_path + prcp_file), axis=1)
 
@@ -54,21 +60,22 @@ class sst_prcp_ds(Dataset):
         # nn = (end - start) // 12 
         # self.prcp = (prcp0[start:end] - np.tile(prcp_clim_avg, [nn, ])) / np.tile(prcp_clim_std, [nn, ]) 
 
-        prcp = np.mean(np.loadtxt(data_path + prcp_file), axis=1)
-        prcp0 = prcp[0::12] + prcp[1::12]
+        # prcp = np.mean(np.loadtxt(data_path + prcp_file), axis=1)
+        # prcp0 = prcp[0::12] + prcp[1::12]
 
-        pbstart, pbend = baseline[0] // 12, baseline[1] // 12
-        prcp_clim_avg = np.mean(prcp0[pbstart:pbend])
-        prcp_clim_std = np.std(prcp0[pbstart:pbend])
+        # pbstart, pbend = baseline[0] // 12, baseline[1] // 12
+        # prcp_clim_avg = np.mean(prcp0[pbstart:pbend])
+        # prcp_clim_std = np.std(prcp0[pbstart:pbend])
 
-        pstart, pend = start//12, end//12
-        self.prcp = (prcp0[pstart:pend] - prcp_clim_avg) / prcp_clim_std
+        # pstart, pend = start//12, end//12
+        # self.prcp = (prcp0[pstart:pend] - prcp_clim_avg) / prcp_clim_std
 
         pause = 1
 
       
     def __len__(self):
-        return len(self.prcp)
+        # return len(self.prcp)
+        return len(self.nino34)
     
     # def __getitem__(self, idx):
     #     sst_stack = np.zeros([self.channel, self.sst.shape[1], self.sst.shape[2]])
@@ -79,20 +86,30 @@ class sst_prcp_ds(Dataset):
     #     yy = torch.from_numpy(np.array(yy)).type(torch.float32)
     #     return xx, yy
         
+    # def __getitem__(self, idx):
+    #     sst_stack = np.zeros([self.channel, self.sst.shape[1], self.sst.shape[2]])
+    #     for i in range(self.channel):
+    #         sst_stack[i, :, :] = self.sst.isel(time=12*idx+self.buffer-self.lag-i).to_numpy()
+    #     xx = torch.from_numpy(sst_stack).type(torch.float32)
+    #     yy = 1 if self.prcp[idx] > 0 else 0
+    #     # yy = self.prcp[idx]
+    #     yy = torch.from_numpy(np.array(yy)).type(torch.float32)
+        
+    #     return xx, yy
     def __getitem__(self, idx):
         sst_stack = np.zeros([self.channel, self.sst.shape[1], self.sst.shape[2]])
         for i in range(self.channel):
-            sst_stack[i, :, :] = self.sst.isel(time=12*idx+self.buffer-self.lag-i).to_numpy()
+            sst_stack[i, :, :] = self.sst.isel(time=idx+self.buffer-self.lag-i).to_numpy()
         xx = torch.from_numpy(sst_stack).type(torch.float32)
-        yy = 1 if self.prcp[idx] > 0 else 0
-        # yy = self.prcp[idx]
-        yy = torch.from_numpy(np.array(yy)).type(torch.float32)
+        # yy = self.nino34[idx]
+        yy = 1 if self.nino34[idx] > 0 else 0
+        yy = torch.from_numpy(np.array([yy])).type(torch.float32)
         
         return xx, yy
     
 
 if __name__ == '__main__':
-    test_data = sst_prcp_ds(channel=3, lag=2)
+    test_data = sst_prcp_ds(start=0, end=480,channel=3, lag=2)
     xx, yy = test_data.__getitem__(idx=0)
     pause = 1
 
